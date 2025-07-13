@@ -119,7 +119,7 @@ curl http://localhost:14000/health
 ### Config File (cfg.ini)
 ```ini
 [smtpd]
-host = 127.0.0.1
+host = ::          # Listen on all interfaces (IPv4 and IPv6)
 port = 25
 
 [rest]
@@ -128,9 +128,9 @@ port = 14000
 
 ### Environment Variables
 Override config file settings with environment variables:
-- `SMTP_HOST` - SMTP server host
-- `SMTP_PORT` - SMTP server port
-- `REST_PORT` - REST API port
+- `SMTP_HOST` - SMTP server host (default: :: - all interfaces)
+- `SMTP_PORT` - SMTP server port (default: 25)
+- `REST_PORT` - REST API port (default: 14000)
 
 ### Command Line Options
 ```bash

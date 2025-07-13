@@ -4,6 +4,7 @@ REST API for accessing stored emails.
 
 import json
 import logging
+import os
 from flask import Flask, jsonify, send_file
 from pathlib import Path
 from typing import Optional
@@ -20,14 +21,20 @@ class EmailAPI:
     def __init__(self, data_store: EmailData, static_dir: Optional[str] = None):
         """
         Initialize the email API.
-        
+
         Args:
             data_store: EmailData instance for accessing stored emails
             static_dir: Directory containing static files (optional)
         """
         self.app = Flask(__name__)
         self.data_store = data_store
-        self.static_dir = static_dir or "static"
+
+        # Default to package's static directory
+        if static_dir is None:
+            package_dir = os.path.dirname(os.path.abspath(__file__))
+            self.static_dir = os.path.join(package_dir, "static")
+        else:
+            self.static_dir = static_dir
         
         # Configure JSON serialization
         self.app.json.ensure_ascii = False

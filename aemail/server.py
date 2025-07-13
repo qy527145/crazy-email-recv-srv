@@ -102,7 +102,15 @@ class EmailServer:
             
             logger.info("Email server started successfully")
             logger.info(f"SMTP: {self.config.smtp_host}:{self.config.smtp_port}")
-            logger.info(f"Web API: http://{self.config.rest_host}:{self.config.rest_port}")
+
+            # Format URL correctly for IPv6
+            web_host = self.config.rest_host
+            if ':' in web_host and not web_host.startswith('['):
+                # IPv6 address needs brackets in URL
+                web_url = f"http://[{web_host}]:{self.config.rest_port}"
+            else:
+                web_url = f"http://{web_host}:{self.config.rest_port}"
+            logger.info(f"Web API: {web_url}")
             
             # Wait for shutdown signal
             self._wait_for_shutdown()

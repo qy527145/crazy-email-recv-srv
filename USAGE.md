@@ -63,15 +63,15 @@ curl http://localhost:14000/to/test@yourdomain.com
 
 ### Environment Variables
 
-- `SMTP_HOST`: Override SMTP host
-- `SMTP_PORT`: Override SMTP port
-- `REST_PORT`: Override REST API port
+- `SMTP_HOST`: Override SMTP host (default: :: - all interfaces)
+- `SMTP_PORT`: Override SMTP port (default: 25)
+- `REST_PORT`: Override REST API port (default: 14000)
 
 ### Configuration File (cfg.ini)
 
 ```ini
 [smtpd]
-host = 127.0.0.1
+host = ::          # Listen on all interfaces (IPv4 and IPv6)
 port = 25
 
 [rest]

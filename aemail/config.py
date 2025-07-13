@@ -36,9 +36,9 @@ class Config:
     def _set_defaults(self):
         """Set default configuration values."""
         self.config.add_section('smtpd')
-        self.config.set('smtpd', 'host', '127.0.0.1')
+        self.config.set('smtpd', 'host', '::')  # Listen on all interfaces (IPv4 and IPv6)
         self.config.set('smtpd', 'port', '25')
-        
+
         self.config.add_section('rest')
         self.config.set('rest', 'port', '14000')
     

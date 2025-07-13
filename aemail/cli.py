@@ -36,7 +36,7 @@ Examples:
   aemail-server --verbose
 
 Environment Variables:
-  SMTP_HOST     - SMTP server host (default: 127.0.0.1)
+  SMTP_HOST     - SMTP server host (default: :: - all interfaces)
   SMTP_PORT     - SMTP server port (default: 25)
   REST_PORT     - REST API port (default: 14000)
         """
@@ -157,7 +157,15 @@ def main():
         logger = logging.getLogger(__name__)
         logger.info("Starting AEmail Server")
         logger.info(f"SMTP: {config.smtp_host}:{config.smtp_port}")
-        logger.info(f"REST API: http://{config.rest_host}:{config.rest_port}")
+
+        # Format URL correctly for IPv6
+        web_host = config.rest_host
+        if ':' in web_host and not web_host.startswith('['):
+            # IPv6 address needs brackets in URL
+            web_url = f"http://[{web_host}]:{config.rest_port}"
+        else:
+            web_url = f"http://{web_host}:{config.rest_port}"
+        logger.info(f"REST API: {web_url}")
         
         if args.db_file:
             logger.info(f"Database: {args.db_file}")

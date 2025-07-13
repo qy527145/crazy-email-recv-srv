@@ -1,9 +1,12 @@
-# Crazy Email Receive Server Configuration
+# AEmail Server Configuration
 # Copy this file to cfg.ini and modify as needed
 
 [smtpd]
-# SMTP server host - bind to all interfaces with 0.0.0.0
-host = 127.0.0.1
+# SMTP server host - bind to all interfaces (IPv4 and IPv6)
+# :: = all interfaces (IPv4 and IPv6)
+# 0.0.0.0 = all IPv4 interfaces only
+# 127.0.0.1 = localhost only
+host = ::
 # SMTP server port - use 25 for standard SMTP, 2525 for testing
 port = 25
 
@@ -13,5 +16,5 @@ port = 14000
 
 # Environment variables can override these settings:
 # SMTP_HOST - SMTP server host
-# SMTP_PORT - SMTP server port  
+# SMTP_PORT - SMTP server port
 # REST_PORT - REST API port
