@@ -16,13 +16,13 @@ poetry install
 
 ```bash
 # Using Poetry (development)
-poetry run crazy-email-server
+poetry run aemail-server
 
 # Using installed package
-crazy-email-server
+aemail-server
 
 # With custom settings
-crazy-email-server --smtp-port 2525 --rest-port 8080 --verbose
+aemail-server --smtp-port 2525 --rest-port 8080 --verbose
 ```
 
 ### 3. Configure DNS (for production)
@@ -83,7 +83,7 @@ port = 14000
 ### GET /health
 Health check endpoint
 ```json
-{"status": "healthy", "service": "crazy-email-recv-srv"}
+{"status": "healthy", "service": "aemail"}
 ```
 
 ### GET /all
@@ -172,7 +172,7 @@ for i in range(100):
 ### 2. Email Testing in CI/CD
 ```bash
 # Start server in background
-crazy-email-server --smtp-port 2525 --rest-port 8080 &
+aemail-server --smtp-port 2525 --rest-port 8080 &
 
 # Run your tests that send emails
 python test_email_functionality.py

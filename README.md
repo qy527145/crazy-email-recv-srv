@@ -30,26 +30,26 @@ A simple SMTP server for receiving emails with REST API access. Perfect for test
 
 ```bash
 # Install with pip
-pip install crazy-email-recv-srv
+pip install aemail
 
 # Or install with Poetry
-poetry add crazy-email-recv-srv
+poetry add aemail
 ```
 
 ### Basic Usage
 
 ```bash
 # Start the server with default settings
-crazy-email-server
+aemail-server
 
 # Start with custom ports
-crazy-email-server --smtp-port 2525 --rest-port 8080
+aemail-server --smtp-port 2525 --rest-port 8080
 
 # Start with persistent database
-crazy-email-server --db-file emails.db
+aemail-server --db-file emails.db
 
 # Start with custom config
-crazy-email-server --config my-config.ini
+aemail-server --config my-config.ini
 ```
 
 ## DNS Configuration
@@ -134,7 +134,7 @@ Override config file settings with environment variables:
 
 ### Command Line Options
 ```bash
-crazy-email-server --help
+aemail-server --help
 
 Options:
   --config, -c          Path to configuration file
@@ -151,8 +151,8 @@ Options:
 ### From Source
 ```bash
 # Clone the repository
-git clone https://github.com/lycying/crazy-email-recv-srv.git
-cd crazy-email-recv-srv
+git clone https://github.com/lycying/aemail.git
+cd aemail
 
 # Install Poetry (if not already installed)
 curl -sSL https://install.python-poetry.org | python3 -
@@ -161,7 +161,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 poetry install
 
 # Run the server
-poetry run crazy-email-server
+poetry run aemail-server
 
 # Run tests
 poetry run pytest
@@ -172,7 +172,7 @@ poetry build
 
 ### Project Structure
 ```
-crazy-email-recv-srv/
+aemail/
 ├── crazy_email_recv_srv/     # Main package
 │   ├── __init__.py
 │   ├── cli.py               # Command line interface
