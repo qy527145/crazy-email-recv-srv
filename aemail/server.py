@@ -84,6 +84,12 @@ class EmailServer:
     def start(self):
         """Start both SMTP and web servers."""
         try:
+            # Display network binding information
+            bind_info = self.config.get_bind_info()
+            logger.info(f"Network binding: {bind_info['description']}")
+            logger.info(f"IPv4 support: {'✓' if bind_info['supports_ipv4'] else '✗'}")
+            logger.info(f"IPv6 support: {'✓' if bind_info['supports_ipv6'] else '✗'}")
+
             # Start SMTP server
             logger.info(f"Starting SMTP server on {self.config.smtp_host}:{self.config.smtp_port}")
             self.smtp_controller = Controller(
@@ -94,7 +100,7 @@ class EmailServer:
             # Enable UTF8 support
             self.smtp_controller.factory = lambda: SMTP(self.smtp_handler, enable_SMTPUTF8=True)
             self.smtp_controller.start()
-            
+
             # Start web server in a separate thread
             logger.info(f"Starting web API on {self.config.rest_host}:{self.config.rest_port}")
             self.web_thread = threading.Thread(target=self._run_web_server, daemon=True)

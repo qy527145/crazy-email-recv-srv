@@ -73,24 +73,29 @@ class EmailProcessor:
     def extract_text_content(cls, message_part) -> str:
         """
         Extract text content from a message part.
-        
+
         Args:
             message_part: Email message part
-            
+
         Returns:
             Extracted text content
         """
         content_type = message_part.get_content_type()
-        
+
         if content_type not in ('text/plain', 'text/html'):
             return f"[{content_type}]"
-        
+
         try:
             content = message_part.get_payload(decode=True)
             if isinstance(content, bytes):
                 charset = cls.guess_charset(message_part)
                 content = content.decode(charset, errors='ignore')
-            return str(content)
+
+            # Add content type marker for HTML content
+            if content_type == 'text/html':
+                return f"<!-- HTML_CONTENT -->\n{str(content)}"
+            else:
+                return str(content)
         except Exception as e:
             logger.warning(f"Failed to extract content from {content_type}: {e}")
             return f"[Error extracting {content_type}]"

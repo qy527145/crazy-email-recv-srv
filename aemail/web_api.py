@@ -5,7 +5,7 @@ REST API for accessing stored emails.
 import json
 import logging
 import os
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, send_file, request
 from pathlib import Path
 from typing import Optional
 
@@ -60,30 +60,75 @@ class EmailAPI:
         
         @self.app.route('/all')
         def get_all_messages():
-            """Get all stored messages."""
+            """Get all stored messages with pagination support."""
             try:
-                messages = self.data_store.get_all_messages()
-                return jsonify(messages)
+                # Get pagination parameters
+                limit = min(int(request.args.get('limit', 20)), 100)  # Max 100 per request
+                offset = max(int(request.args.get('offset', 0)), 0)
+
+                # Get messages and total count
+                messages = self.data_store.get_all_messages(limit=limit, offset=offset)
+                total_count = self.data_store.get_message_count()
+
+                return jsonify({
+                    "messages": messages,
+                    "pagination": {
+                        "limit": limit,
+                        "offset": offset,
+                        "total": total_count,
+                        "has_more": offset + limit < total_count
+                    }
+                })
             except Exception as e:
                 logger.error(f"Error retrieving all messages: {e}")
                 return jsonify({"error": "Failed to retrieve messages"}), 500
-        
+
         @self.app.route('/from/<path:sender>')
         def get_messages_from(sender: str):
-            """Get messages from a specific sender."""
+            """Get messages from a specific sender with pagination support."""
             try:
-                messages = self.data_store.get_messages_from(sender)
-                return jsonify(messages)
+                # Get pagination parameters
+                limit = min(int(request.args.get('limit', 20)), 100)  # Max 100 per request
+                offset = max(int(request.args.get('offset', 0)), 0)
+
+                # Get messages and total count
+                messages = self.data_store.get_messages_from(sender, limit=limit, offset=offset)
+                total_count = self.data_store.get_message_count(sender=sender)
+
+                return jsonify({
+                    "messages": messages,
+                    "pagination": {
+                        "limit": limit,
+                        "offset": offset,
+                        "total": total_count,
+                        "has_more": offset + limit < total_count
+                    }
+                })
             except Exception as e:
                 logger.error(f"Error retrieving messages from {sender}: {e}")
                 return jsonify({"error": "Failed to retrieve messages"}), 500
-        
+
         @self.app.route('/to/<path:recipient>')
         def get_messages_to(recipient: str):
-            """Get messages to a specific recipient."""
+            """Get messages to a specific recipient with pagination support."""
             try:
-                messages = self.data_store.get_messages_to(recipient)
-                return jsonify(messages)
+                # Get pagination parameters
+                limit = min(int(request.args.get('limit', 20)), 100)  # Max 100 per request
+                offset = max(int(request.args.get('offset', 0)), 0)
+
+                # Get messages and total count
+                messages = self.data_store.get_messages_to(recipient, limit=limit, offset=offset)
+                total_count = self.data_store.get_message_count(recipient=recipient)
+
+                return jsonify({
+                    "messages": messages,
+                    "pagination": {
+                        "limit": limit,
+                        "offset": offset,
+                        "total": total_count,
+                        "has_more": offset + limit < total_count
+                    }
+                })
             except Exception as e:
                 logger.error(f"Error retrieving messages to {recipient}: {e}")
                 return jsonify({"error": "Failed to retrieve messages"}), 500

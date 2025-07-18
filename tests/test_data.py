@@ -91,19 +91,27 @@ class TestEmailData:
         for msg in messages:
             data.store_message(msg)
         
-        # Test get_all_messages
-        all_msgs = data.get_all_messages()
-        assert len(all_msgs) == 3
-        
-        # Test get_messages_from
+        # Test get_all_messages with pagination
+        all_msgs = data.get_all_messages(limit=2)
+        assert len(all_msgs) == 2
+
+        all_msgs_page2 = data.get_all_messages(limit=2, offset=2)
+        assert len(all_msgs_page2) == 1
+
+        # Test get_messages_from with pagination
         alice_msgs = data.get_messages_from('alice@example.com')
         assert len(alice_msgs) == 2
         assert all(msg['from'] == 'alice@example.com' for msg in alice_msgs)
-        
-        # Test get_messages_to
+
+        # Test get_messages_to with pagination
         bob_msgs = data.get_messages_to('bob@example.com')
         assert len(bob_msgs) == 2
         assert all('bob@example.com' in msg['to'] for msg in bob_msgs)
+
+        # Test message count
+        assert data.get_message_count() == 3
+        assert data.get_message_count(sender='alice@example.com') == 2
+        assert data.get_message_count(recipient='bob@example.com') == 2
         
         data.close()
     
@@ -132,9 +140,9 @@ class TestEmailData:
             }
             data.store_message(message)
         
-        # Should return only 100 messages (default limit)
+        # Should return only 20 messages (new default limit)
         all_msgs = data.get_all_messages()
-        assert len(all_msgs) == 100
+        assert len(all_msgs) == 20
         
         # Test custom limit
         limited_msgs = data.get_all_messages(limit=50)

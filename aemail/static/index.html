@@ -187,19 +187,86 @@
 
         .email-content {
             color: #666;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
-            white-space: pre-wrap;
             background: white;
             padding: 15px;
             border-radius: 3px;
             border: 1px solid #e9ecef;
         }
 
+        .email-content.text-content {
+            white-space: pre-wrap;
+        }
+
+        .email-content.html-content {
+            /* Allow HTML rendering but constrain styles */
+        }
+
+        .email-content.html-content * {
+            max-width: 100% !important;
+        }
+
+        .content-toggle {
+            margin-bottom: 10px;
+        }
+
+        .content-toggle button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 5px 10px;
+            margin-right: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .content-toggle button.active {
+            background: #667eea;
+            color: white;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
             color: #6c757d;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            gap: 10px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            margin: 0 15px;
+            color: #6c757d;
+        }
+
+        .load-more {
+            text-align: center;
+            margin: 20px 0;
         }
 
         .error {
@@ -295,8 +362,13 @@
 
             <div id="all-tab" class="tab-content">
                 <h2>All Emails</h2>
-                <p>Click the button below to load all recent emails (last 100):</p>
-                <button class="btn" onclick="loadAllEmails()">📥 Load All Emails</button>
+                <p>Load emails with pagination for better performance:</p>
+                <button class="btn" onclick="loadAllEmails(true)">📥 Load Emails</button>
+                <div id="all-pagination" class="pagination" style="display: none;">
+                    <button id="prev-btn" onclick="loadPreviousPage()">⬅️ Previous</button>
+                    <span id="page-info" class="page-info"></span>
+                    <button id="next-btn" onclick="loadNextPage()">Next ➡️</button>
+                </div>
                 <div id="all-results" class="results"></div>
             </div>
 
@@ -306,20 +378,23 @@
 
                 <div class="endpoint">
                     <div class="endpoint-method">GET /all</div>
-                    <div class="endpoint-url">/all</div>
-                    <p>Get all stored messages (last 100)</p>
+                    <div class="endpoint-url">/all?limit=20&offset=0</div>
+                    <p>Get all stored messages with pagination support</p>
+                    <p><strong>Parameters:</strong> limit (max 100), offset</p>
                 </div>
 
                 <div class="endpoint">
                     <div class="endpoint-method">GET /from/&lt;email&gt;</div>
-                    <div class="endpoint-url">/from/test@example.com</div>
-                    <p>Get messages from a specific sender</p>
+                    <div class="endpoint-url">/from/test@example.com?limit=20&offset=0</div>
+                    <p>Get messages from a specific sender with pagination</p>
+                    <p><strong>Parameters:</strong> limit (max 100), offset</p>
                 </div>
 
                 <div class="endpoint">
                     <div class="endpoint-method">GET /to/&lt;email&gt;</div>
-                    <div class="endpoint-url">/to/user@example.com</div>
-                    <p>Get messages to a specific recipient</p>
+                    <div class="endpoint-url">/to/user@example.com?limit=20&offset=0</div>
+                    <p>Get messages to a specific recipient with pagination</p>
+                    <p><strong>Parameters:</strong> limit (max 100), offset</p>
                 </div>
 
                 <div class="endpoint">
@@ -336,6 +411,13 @@
     </div>
 
     <script>
+        // Global state for pagination
+        let currentPage = 0;
+        let pageSize = 20;
+        let totalMessages = 0;
+        let currentSearchType = null;
+        let currentSearchEmail = null;
+
         function showTab(tabName) {
             // Hide all tab contents
             const tabContents = document.querySelectorAll('.tab-content');
@@ -361,29 +443,70 @@
                 return;
             }
 
+            // Reset pagination for search
+            currentPage = 0;
+            currentSearchType = searchType;
+            currentSearchEmail = emailAddress;
+
             const resultsDiv = document.getElementById('search-results');
             resultsDiv.innerHTML = '<div class="loading">🔄 Searching...</div>';
 
-            const url = `/${searchType}/${encodeURIComponent(emailAddress)}`;
+            const url = `/${searchType}/${encodeURIComponent(emailAddress)}?limit=${pageSize}&offset=${currentPage * pageSize}`;
 
-            fetch(url)
+            fetchWithTimeout(url, 10000)
                 .then(response => response.json())
-                .then(data => displayResults(data, resultsDiv))
+                .then(data => {
+                    if (data.messages) {
+                        displayResults(data.messages, resultsDiv);
+                        updatePaginationInfo(data.pagination);
+                    } else {
+                        // Fallback for old API format
+                        displayResults(data, resultsDiv);
+                    }
+                })
                 .catch(error => {
                     resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
                 });
         }
 
-        function loadAllEmails() {
+        function loadAllEmails(reset = false) {
+            if (reset) {
+                currentPage = 0;
+                currentSearchType = null;
+                currentSearchEmail = null;
+            }
+
             const resultsDiv = document.getElementById('all-results');
+            const paginationDiv = document.getElementById('all-pagination');
+
             resultsDiv.innerHTML = '<div class="loading">🔄 Loading...</div>';
 
-            fetch('/all')
+            const url = `/all?limit=${pageSize}&offset=${currentPage * pageSize}`;
+
+            fetchWithTimeout(url, 10000)
                 .then(response => response.json())
-                .then(data => displayResults(data, resultsDiv))
+                .then(data => {
+                    if (data.messages) {
+                        displayResults(data.messages, resultsDiv);
+                        updatePaginationInfo(data.pagination);
+                        paginationDiv.style.display = 'flex';
+                    } else {
+                        // Fallback for old API format
+                        displayResults(data, resultsDiv);
+                    }
+                })
                 .catch(error => {
                     resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
                 });
+        }
+
+        function fetchWithTimeout(url, timeout = 10000) {
+            return Promise.race([
+                fetch(url),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Request timeout')), timeout)
+                )
+            ]);
         }
 
         function displayResults(emails, container) {
@@ -392,21 +515,150 @@
                 return;
             }
 
-            const emailsHtml = emails.map(email => `
-                <div class="email-item">
-                    <div class="email-header">
-                        <div>
-                            <span class="email-from">📤 From: ${escapeHtml(email.from || 'Unknown')}</span>
-                            <span class="email-to">📥 To: ${escapeHtml((email.to || []).join(', '))}</span>
+            const emailsHtml = emails.map((email, index) => {
+                const emailId = `email-${Date.now()}-${index}`;
+                const content = email.content || 'No content';
+                const isHtml = detectHtmlContent(content);
+
+                // Clean HTML content marker if present
+                const cleanContent = content.replace('<!-- HTML_CONTENT -->\n', '');
+
+                return `
+                    <div class="email-item" data-original-content="${escapeHtml(cleanContent)}">
+                        <div class="email-header">
+                            <div>
+                                <span class="email-from">📤 From: ${escapeHtml(email.from || 'Unknown')}</span>
+                                <span class="email-to">📥 To: ${escapeHtml((email.to || []).join(', '))}</span>
+                            </div>
+                            <span class="email-time">🕒 ${formatDate(email.time)}</span>
                         </div>
-                        <span class="email-time">🕒 ${formatDate(email.time)}</span>
+                        <div class="email-subject">📋 ${escapeHtml(email.subject || 'No Subject')}</div>
+                        ${isHtml ? `
+                            <div class="content-toggle">
+                                <button class="toggle-btn active" onclick="showTextContent('${emailId}')">📝 Text</button>
+                                <button class="toggle-btn" onclick="showHtmlContent('${emailId}')">🌐 HTML</button>
+                            </div>
+                        ` : ''}
+                        <div class="email-content ${isHtml ? 'text-content' : ''}" id="${emailId}">
+                            ${escapeHtml(cleanContent)}
+                        </div>
                     </div>
-                    <div class="email-subject">📋 ${escapeHtml(email.subject || 'No Subject')}</div>
-                    <div class="email-content">${escapeHtml(email.content || 'No content')}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             container.innerHTML = emailsHtml;
+        }
+
+        function detectHtmlContent(content) {
+            // Check for HTML content marker added by backend
+            if (content.includes('<!-- HTML_CONTENT -->')) {
+                return true;
+            }
+
+            // Simple HTML detection - look for common HTML tags
+            const htmlTags = /<\s*(html|body|div|p|span|a|img|table|tr|td|th|ul|ol|li|h[1-6]|br|hr|strong|em|b|i)\s*[^>]*>/i;
+            return htmlTags.test(content);
+        }
+
+        function showTextContent(emailId) {
+            const contentDiv = document.getElementById(emailId);
+            const buttons = contentDiv.parentElement.querySelectorAll('.toggle-btn');
+            const emailItem = contentDiv.closest('.email-item');
+
+            // Update button states
+            buttons[0].classList.add('active');
+            buttons[1].classList.remove('active');
+
+            // Show escaped text content
+            const originalContent = emailItem.getAttribute('data-original-content');
+            contentDiv.className = 'email-content text-content';
+            contentDiv.textContent = originalContent;
+        }
+
+        function showHtmlContent(emailId) {
+            const contentDiv = document.getElementById(emailId);
+            const buttons = contentDiv.parentElement.querySelectorAll('.toggle-btn');
+            const emailItem = contentDiv.closest('.email-item');
+
+            // Update button states
+            buttons[0].classList.remove('active');
+            buttons[1].classList.add('active');
+
+            // Get the original content and render as HTML
+            const originalContent = emailItem.getAttribute('data-original-content');
+            contentDiv.className = 'email-content html-content';
+            contentDiv.innerHTML = sanitizeHtml(originalContent);
+        }
+
+        function sanitizeHtml(html) {
+            // Basic HTML sanitization - remove dangerous elements and attributes
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            // Remove script tags and event handlers
+            const scripts = tempDiv.querySelectorAll('script');
+            scripts.forEach(script => script.remove());
+
+            // Remove dangerous attributes
+            const allElements = tempDiv.querySelectorAll('*');
+            allElements.forEach(element => {
+                // Remove event handler attributes
+                Array.from(element.attributes).forEach(attr => {
+                    if (attr.name.startsWith('on') || attr.name === 'javascript:') {
+                        element.removeAttribute(attr.name);
+                    }
+                });
+
+                // Remove dangerous elements
+                if (['script', 'object', 'embed', 'iframe'].includes(element.tagName.toLowerCase())) {
+                    element.remove();
+                }
+            });
+
+            return tempDiv.innerHTML;
+        }
+
+        function updatePaginationInfo(pagination) {
+            if (!pagination) return;
+
+            totalMessages = pagination.total;
+            const pageInfo = document.getElementById('page-info');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            if (pageInfo) {
+                const start = pagination.offset + 1;
+                const end = Math.min(pagination.offset + pagination.limit, pagination.total);
+                pageInfo.textContent = `${start}-${end} of ${pagination.total}`;
+            }
+
+            if (prevBtn) {
+                prevBtn.disabled = pagination.offset === 0;
+            }
+
+            if (nextBtn) {
+                nextBtn.disabled = !pagination.has_more;
+            }
+        }
+
+        function loadPreviousPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                if (currentSearchType && currentSearchEmail) {
+                    searchEmails();
+                } else {
+                    loadAllEmails();
+                }
+            }
+        }
+
+        function loadNextPage() {
+            currentPage++;
+            if (currentSearchType && currentSearchEmail) {
+                searchEmails();
+            } else {
+                loadAllEmails();
+            }
         }
 
         function clearResults() {

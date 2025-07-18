@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aemail"
-version = "0.2.0"
+version = "0.2.2"
 description = "A simple SMTP server for receiving emails with REST API access"
 authors = ["lycying <lycying@example.com>"]
 readme = "README.md"

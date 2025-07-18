@@ -79,61 +79,86 @@ class EmailData:
         )
         self.conn.commit()
     
-    def get_messages_from(self, sender: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_messages_from(self, sender: str, limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
         """
-        Get messages from a specific sender.
-        
+        Get messages from a specific sender with pagination.
+
         Args:
             sender: Email address of the sender
-            limit: Maximum number of messages to return
-            
+            limit: Maximum number of messages to return (default: 20)
+            offset: Number of messages to skip (default: 0)
+
         Returns:
             List of message dictionaries
         """
         cursor = self.conn.cursor()
         cursor.execute(
-            "SELECT * FROM msg WHERE frm = ? ORDER BY createDate DESC LIMIT ?",
-            (sender, limit)
+            "SELECT * FROM msg WHERE frm = ? ORDER BY createDate DESC LIMIT ? OFFSET ?",
+            (sender, limit, offset)
         )
         rows = cursor.fetchall()
         return self._transform_rows(rows)
-    
-    def get_messages_to(self, recipient: str, limit: int = 100) -> List[Dict[str, Any]]:
+
+    def get_messages_to(self, recipient: str, limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
         """
-        Get messages to a specific recipient.
-        
+        Get messages to a specific recipient with pagination.
+
         Args:
             recipient: Email address of the recipient
-            limit: Maximum number of messages to return
-            
+            limit: Maximum number of messages to return (default: 20)
+            offset: Number of messages to skip (default: 0)
+
         Returns:
             List of message dictionaries
         """
         cursor = self.conn.cursor()
         cursor.execute(
-            "SELECT * FROM msg WHERE to0 = ? ORDER BY createDate DESC LIMIT ?",
-            (recipient, limit)
+            "SELECT * FROM msg WHERE to0 = ? ORDER BY createDate DESC LIMIT ? OFFSET ?",
+            (recipient, limit, offset)
         )
         rows = cursor.fetchall()
         return self._transform_rows(rows)
-    
-    def get_all_messages(self, limit: int = 100) -> List[Dict[str, Any]]:
+
+    def get_all_messages(self, limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
         """
-        Get all messages.
-        
+        Get all messages with pagination.
+
         Args:
-            limit: Maximum number of messages to return
-            
+            limit: Maximum number of messages to return (default: 20)
+            offset: Number of messages to skip (default: 0)
+
         Returns:
             List of message dictionaries
         """
         cursor = self.conn.cursor()
         cursor.execute(
-            "SELECT * FROM msg ORDER BY createDate DESC LIMIT ?",
-            (limit,)
+            "SELECT * FROM msg ORDER BY createDate DESC LIMIT ? OFFSET ?",
+            (limit, offset)
         )
         rows = cursor.fetchall()
         return self._transform_rows(rows)
+
+    def get_message_count(self, sender: str = None, recipient: str = None) -> int:
+        """
+        Get total count of messages for pagination.
+
+        Args:
+            sender: Email address of the sender (optional)
+            recipient: Email address of the recipient (optional)
+
+        Returns:
+            Total number of messages
+        """
+        cursor = self.conn.cursor()
+
+        if sender:
+            cursor.execute("SELECT COUNT(*) FROM msg WHERE frm = ?", (sender,))
+        elif recipient:
+            cursor.execute("SELECT COUNT(*) FROM msg WHERE to0 = ?", (recipient,))
+        else:
+            cursor.execute("SELECT COUNT(*) FROM msg")
+
+        return cursor.fetchone()[0]
     
     def _transform_rows(self, rows: List[tuple]) -> List[Dict[str, Any]]:
         """

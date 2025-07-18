@@ -2,11 +2,12 @@
 # Copy this file to cfg.ini and modify as needed
 
 [smtpd]
-# SMTP server host - bind to all interfaces (IPv4 and IPv6)
-# :: = all interfaces (IPv4 and IPv6)
-# 0.0.0.0 = all IPv4 interfaces only
-# 127.0.0.1 = localhost only
-host = ::
+# SMTP server host - network binding options:
+# auto = Auto-detect best binding (recommended)
+# :: = IPv6 dual-stack (supports both IPv4 and IPv6)
+# 0.0.0.0 = IPv4 all interfaces
+# 127.0.0.1 = IPv4 localhost only
+host = auto
 # SMTP server port - use 25 for standard SMTP, 2525 for testing
 port = 25
 

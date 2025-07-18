@@ -16,10 +16,11 @@ class TestConfig:
     def test_default_config(self):
         """Test default configuration values."""
         config = Config()
-        
-        assert config.smtp_host == '127.0.0.1'
+
+        # After auto-detection, smtp_host should be a valid IP address
+        assert config.smtp_host in ['::', '0.0.0.0', '127.0.0.1']
         assert config.smtp_port == 25
-        assert config.rest_host == '127.0.0.1'
+        assert config.rest_host == config.smtp_host  # rest_host returns smtp_host
         assert config.rest_port == 14000
     
     def test_config_from_file(self):
