@@ -7,7 +7,8 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import time
-import requests
+import urllib.request
+import json
 
 def send_test_html_email():
     """Send a test HTML email to the local SMTP server."""
@@ -113,34 +114,34 @@ def check_email_received():
     try:
         # Wait a moment for email to be processed
         time.sleep(2)
-        
+
         # Check via API
-        response = requests.get('http://localhost:14000/to/recipient@localhost')
-        if response.status_code == 200:
-            data = response.json()
-            if 'messages' in data:
-                messages = data['messages']
-            else:
-                messages = data  # Fallback for old API format
-                
-            if messages:
-                print(f"✅ Found {len(messages)} message(s)")
-                latest_msg = messages[0]
-                print(f"📧 Subject: {latest_msg.get('subject', 'No subject')}")
-                
-                content = latest_msg.get('content', '')
-                if '<!-- HTML_CONTENT -->' in content or '<html>' in content.lower():
-                    print("✅ HTML content detected in email!")
-                    return True
+        with urllib.request.urlopen('http://localhost:14000/to/recipient@localhost') as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode())
+                if 'messages' in data:
+                    messages = data['messages']
                 else:
-                    print("⚠️  No HTML content marker found")
+                    messages = data  # Fallback for old API format
+
+                if messages:
+                    print(f"✅ Found {len(messages)} message(s)")
+                    latest_msg = messages[0]
+                    print(f"📧 Subject: {latest_msg.get('subject', 'No subject')}")
+
+                    content = latest_msg.get('content', '')
+                    if '<!-- HTML_CONTENT -->' in content or '<html>' in content.lower():
+                        print("✅ HTML content detected in email!")
+                        return True
+                    else:
+                        print("⚠️  No HTML content marker found")
+                        return False
+                else:
+                    print("❌ No messages found")
                     return False
             else:
-                print("❌ No messages found")
+                print(f"❌ API request failed: {response.status}")
                 return False
-        else:
-            print(f"❌ API request failed: {response.status_code}")
-            return False
     except Exception as e:
         print(f"❌ Failed to check email: {e}")
         return False

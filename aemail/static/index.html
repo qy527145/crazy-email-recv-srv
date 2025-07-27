@@ -524,7 +524,7 @@
                 const cleanContent = content.replace('<!-- HTML_CONTENT -->\n', '');
 
                 return `
-                    <div class="email-item" data-original-content="${escapeHtml(cleanContent)}">
+                    <div class="email-item" data-original-content="${escapeHtml(cleanContent)}" data-raw-content="${cleanContent.replace(/"/g, '&quot;')}">
                         <div class="email-header">
                             <div>
                                 <span class="email-from">📤 From: ${escapeHtml(email.from || 'Unknown')}</span>
@@ -569,10 +569,10 @@
             buttons[0].classList.add('active');
             buttons[1].classList.remove('active');
 
-            // Show escaped text content
-            const originalContent = emailItem.getAttribute('data-original-content');
+            // Show raw text content (unescaped)
+            const rawContent = emailItem.getAttribute('data-raw-content');
             contentDiv.className = 'email-content text-content';
-            contentDiv.textContent = originalContent;
+            contentDiv.textContent = unescapeHtml(rawContent);
         }
 
         function showHtmlContent(emailId) {
@@ -584,10 +584,10 @@
             buttons[0].classList.remove('active');
             buttons[1].classList.add('active');
 
-            // Get the original content and render as HTML
-            const originalContent = emailItem.getAttribute('data-original-content');
+            // Get the raw content and render as HTML
+            const rawContent = emailItem.getAttribute('data-raw-content');
             contentDiv.className = 'email-content html-content';
-            contentDiv.innerHTML = sanitizeHtml(originalContent);
+            contentDiv.innerHTML = sanitizeHtml(unescapeHtml(rawContent));
         }
 
         function sanitizeHtml(html) {
@@ -670,6 +670,12 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function unescapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerHTML = text;
+            return div.textContent || div.innerText || '';
         }
 
         function formatDate(dateString) {
